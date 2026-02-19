@@ -1,0 +1,73 @@
+VALIDATION RESULTS
+============================================================
+
+SUMMARY:
+  Total rows:    10
+  PASS (all checks): 3 rows
+  FAIL (any check):  7 rows
+  Total individual failures: 12
+
+FAILURES BY COLUMN:
+------------------------------------------------------------
+
+customer_id: OK - No failures
+
+first_name: FAIL - 1 failure(s)
+  - Row 3 (customer_id=3): first_name is empty
+
+last_name: FAIL - 1 failure(s)
+  - Row 5 (customer_id=5): last_name is empty
+
+email: OK - No failures
+
+phone: FAIL - 3 failure(s)
+  - Row 3 (customer_id=3): Non-standard phone format (expected XXX-XXX-XXXX): '(555) 234-5678'
+  - Row 8 (customer_id=8): Non-standard phone format (expected XXX-XXX-XXXX): '555.789.0123'
+  - Row 9 (customer_id=9): Non-standard phone format (expected XXX-XXX-XXXX): '5557890123'
+
+date_of_birth: FAIL - 2 failure(s)
+  - Row 4 (customer_id=4): date_of_birth wrong format '1975/05/10' (expected YYYY-MM-DD, got %Y/%m/%d)
+  - Row 6 (customer_id=6): date_of_birth is not a valid date: 'invalid_date'
+
+address: FAIL - 1 failure(s)
+  - Row 9 (customer_id=9): Address is empty
+
+income: FAIL - 1 failure(s)
+  - Row 3 (customer_id=3): Income is empty
+
+account_status: FAIL - 1 failure(s)
+  - Row 4 (customer_id=4): account_status is empty
+
+created_date: FAIL - 2 failure(s)
+  - Row 5 (customer_id=5): created_date wrong format '01/15/2024' (expected YYYY-MM-DD, got %m/%d/%Y)
+  - Row 10 (customer_id=10): created_date is not a valid date: 'invalid_date'
+
+------------------------------------------------------------
+VALIDATION RULES REFERENCE:
+------------------------------------------------------------
+  customer_id          -> Unique, positive integer
+  first_name           -> Non-empty, 2-50 chars, letters only
+  last_name            -> Non-empty, 2-50 chars, letters only
+  email                -> Valid format: something@domain.com
+  phone                -> Standard format: XXX-XXX-XXXX
+  date_of_birth        -> Valid date YYYY-MM-DD, age between 18-120
+  address              -> Non-empty, 10-200 chars
+  income               -> Non-negative number, <= $10,000,000
+  account_status       -> One of: active, inactive, suspended
+  created_date         -> Valid date YYYY-MM-DD
+
+ROW-BY-ROW PASS/FAIL:
+------------------------------------------------------------
+  Row 1 (customer_id=1): PASS
+  Row 2 (customer_id=2): PASS
+  Row 3 (customer_id=3): FAIL
+  Row 4 (customer_id=4): FAIL
+  Row 5 (customer_id=5): FAIL
+  Row 6 (customer_id=6): FAIL
+  Row 7 (customer_id=7): PASS
+  Row 8 (customer_id=8): FAIL
+  Row 9 (customer_id=9): FAIL
+  Row 10 (customer_id=10): FAIL
+
+END OF REPORT
+============================================================
