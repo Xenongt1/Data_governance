@@ -1,7 +1,7 @@
 PIPELINE EXECUTION REPORT
 ============================================================
-Timestamp: 2026-02-19 15:44:55
-Duration:  0.04 seconds
+Timestamp: 2026-02-19 15:46:45
+Duration:  0.06 seconds
 
 Stage 1: LOAD:
   [OK] Loaded customers_raw.csv - 10 rows, 10 columns
