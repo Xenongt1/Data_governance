@@ -1,0 +1,86 @@
+PIPELINE EXECUTION REPORT
+============================================================
+Timestamp: 2026-02-19 15:44:55
+Duration:  0.04 seconds
+
+Stage 1: LOAD:
+  [OK] Loaded customers_raw.csv - 10 rows, 10 columns
+
+Stage 2: CLEAN:
+  [OK] Phone formats normalized:   3 row(s)
+  [OK] Date formats normalized:    4 row(s)
+  [OK] Name casing fixed:          1 row(s)
+  [OK] Email casing fixed:         1 row(s)
+  [OK] Missing values filled:      5 field(s)
+
+Stage 3: VALIDATE:
+  [OK] All 10 rows passed validation
+  [OK] first_name: 10/10 valid
+  [OK] last_name: 10/10 valid
+  [OK] email: 10/10 valid
+  [OK] phone: 10/10 valid
+  [OK] date_of_birth: 10/10 valid
+  [OK] created_date: 10/10 valid
+  [OK] account_status: 10/10 valid
+  [OK] income: 10/10 valid
+  [OK] No critical validation failures - pipeline continuing
+
+Stage 4: DETECT PII:
+  [OK] Found PII - emails: 10/10 rows (100%)
+  [OK] Found PII - phones: 10/10 rows (100%)
+  [OK] Found PII - addresses: 9/10 rows (90%)
+  [OK] Found PII - dates_of_birth: 9/10 rows (90%)
+  [OK] Found PII - first_names: 9/10 rows (90%)
+  [OK] Found PII - last_names: 9/10 rows (90%)
+
+Stage 5: MASK:
+  [OK] Names masked       (first_name, last_name)
+  [OK] Emails masked      (local part hidden, domain kept)
+  [OK] Phones masked      (last 4 digits kept)
+  [OK] Addresses masked   (fully replaced)
+  [OK] Dates of birth masked (year kept, month/day hidden)
+  [OK] income, account_status, created_date - NOT masked (business data)
+
+Stage 6: SAVE:
+  [OK] Saved customers_cleaned.csv
+  [OK] Saved customers_masked.csv
+
+------------------------------------------------------------
+SUMMARY:
+------------------------------------------------------------
+  Input:    customers_raw.csv (10 rows, messy)
+  Output:   customers_cleaned.csv + customers_masked.csv (10 rows, clean)
+
+  Cleaning:
+    - 3 phone(s) normalized
+    - 4 date(s) normalized
+    - 1 name(s) title-cased
+    - 1 email(s) lowercased
+    - 5 missing value(s) filled
+
+  Validation:
+    - 10/10 rows passed all checks
+    - 0 individual column failures resolved
+
+  PII Detection:
+    - 10 emails detected and flagged
+    - 10 phones detected and flagged
+    - 9 addresses detected and flagged
+    - 9 dates_of_birth detected and flagged
+    - 9 first_names detected and flagged
+    - 9 last_names detected and flagged
+
+  PII Masking:
+    - first_name, last_name, email, phone, address, date_of_birth -> masked
+    - income, account_status, created_date, customer_id -> preserved
+
+  Quality:  PASS
+  PII Risk: MITIGATED
+
+  Files saved:
+    - customers_cleaned.csv
+    - customers_masked.csv
+    - pipeline_execution_report.txt
+
+Status: SUCCESS
+============================================================
