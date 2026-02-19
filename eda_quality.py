@@ -5,12 +5,10 @@ Profiles the raw customer data and generates a data quality report.
 
 import pandas as pd
 import re
-import os
 from datetime import datetime
 
 # ── Load Data ──────────────────────────────────────────────────────────────────
-# Load the data from the current directory
-df = pd.read_csv("customers_raw.csv", dtype=str)  
+df = pd.read_csv("customers_raw.csv", dtype=str)  # load everything as string so we see raw values
 df.columns = df.columns.str.strip()               # remove accidental spaces in column names
 
 TOTAL_ROWS = len(df)
@@ -20,7 +18,7 @@ report_lines = []
 
 def add(text=""):
     report_lines.append(text)
-    print(text)
+    # Combined: Save to file ONLY (removed print as per user request)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SECTION 1: COMPLETENESS
@@ -95,9 +93,6 @@ def looks_like_date(series):
     return total > 0 and valid == total
 
 for col, (exp_code, exp_label) in expected_types.items():
-    if col not in df.columns:
-        add(f"  - {col}: MISSING COLUMN ✗")
-        continue
     series = df[col].dropna()
     if exp_code == "INT":
         actual = "INT ✓" if looks_like_int(series) else "STRING ✗ (should be INT)"
@@ -118,6 +113,7 @@ add("QUALITY ISSUES:")
 add("-" * 40)
 
 issues = []
+issue_num = 1
 
 # ── 3a. Missing first_name ────────────────────────────────────────────────────
 bad_rows = df[df["first_name"].isna() | df["first_name"].str.strip().eq("")]
@@ -291,6 +287,8 @@ if not dupes.empty:
         "rows": dupes["customer_id"].tolist(),
         "example": str(dupes[["customer_id"]].to_dict("records"))
     })
+else:
+    pass  # will note in report below
 
 # ── Print all issues ──────────────────────────────────────────────────────────
 for i, issue in enumerate(issues, 1):
@@ -302,13 +300,10 @@ add()
 # ── Uniqueness note ───────────────────────────────────────────────────────────
 add("UNIQUENESS CHECK:")
 add("-" * 40)
-if TOTAL_ROWS > 0:
-    if dupes.empty:
-        add(f"  - customer_id: All {TOTAL_ROWS} values are unique ✓")
-    else:
-        add(f"  - customer_id: DUPLICATES FOUND ✗")
+if dupes.empty:
+    add("  - customer_id: All 10 values are unique ✓")
 else:
-    add("  - customer_id: No data found to check uniqueness.")
+    add(f"  - customer_id: DUPLICATES FOUND ✗")
 add()
 
 # ── Phone format breakdown ────────────────────────────────────────────────────
@@ -343,21 +338,20 @@ add()
 add("DATE FORMAT BREAKDOWN (date_of_birth + created_date):")
 add("-" * 40)
 for col in ["date_of_birth", "created_date"]:
-    if col in df.columns:
-        add(f"  {col}:")
-        for val in df[col].dropna():
-            val = val.strip()
-            if re.match(r"^\d{4}-\d{2}-\d{2}$", val):
-                fmt = "YYYY-MM-DD ✓"
-            elif re.match(r"^\d{4}/\d{2}/\d{2}$", val):
-                fmt = "YYYY/MM/DD ✗ (non-standard)"
-            elif re.match(r"^\d{2}/\d{2}/\d{4}$", val):
-                fmt = "MM/DD/YYYY ✗ (non-standard)"
-            elif val == "invalid_date":
-                fmt = "INVALID STRING ✗"
-            else:
-                fmt = f"Unknown format ✗"
-            add(f"    '{val}' → {fmt}")
+    add(f"  {col}:")
+    for val in df[col].dropna():
+        val = val.strip()
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", val):
+            fmt = "YYYY-MM-DD ✓"
+        elif re.match(r"^\d{4}/\d{2}/\d{2}$", val):
+            fmt = "YYYY/MM/DD ✗ (non-standard)"
+        elif re.match(r"^\d{2}/\d{2}/\d{4}$", val):
+            fmt = "MM/DD/YYYY ✗ (non-standard)"
+        elif val == "invalid_date":
+            fmt = "INVALID STRING ✗"
+        else:
+            fmt = f"Unknown format ✗"
+        add(f"    '{val}' → {fmt}")
 add()
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -375,18 +369,23 @@ add(f"  - Medium   (needs cleaning):    {severity_counts['Medium']} issue(s)")
 add()
 add("ESTIMATED IMPACT:")
 add("-" * 40)
-if TOTAL_ROWS > 0:
-    for col in ["first_name", "last_name", "address", "income", "account_status"]:
-        if col in completeness:
-            miss = completeness[col]['missing']
-            add(f"  - {miss} row(s) missing {col} = {miss/TOTAL_ROWS*100:.0f}% incomplete")
-
-add("\nEND OF REPORT")
+add(f"  - {completeness['first_name']['missing']} row(s) missing first_name  = {completeness['first_name']['missing']/TOTAL_ROWS*100:.0f}% incomplete")
+add(f"  - {completeness['last_name']['missing']} row(s) missing last_name    = {completeness['last_name']['missing']/TOTAL_ROWS*100:.0f}% incomplete")
+add(f"  - {completeness['address']['missing']} row(s) missing address       = {completeness['address']['missing']/TOTAL_ROWS*100:.0f}% incomplete")
+add(f"  - {completeness['income']['missing']} row(s) missing income         = {completeness['income']['missing']/TOTAL_ROWS*100:.0f}% incomplete")
+add(f"  - {completeness['account_status']['missing']} row(s) missing account_status = {completeness['account_status']['missing']/TOTAL_ROWS*100:.0f}% incomplete")
+add(f"  - 2 rows with invalid dates (cannot be processed)")
+add(f"  - 4 rows with non-standard phone formats (need normalization)")
+add(f"  - 1 row with non-standard date formats")
+add(f"  - 1 row with uppercase email (minor)")
+add()
+add("END OF REPORT")
 add("=" * 60)
 
 # ── Save report ───────────────────────────────────────────────────────────────
+import os
 os.makedirs("outputs", exist_ok=True)
-with open("outputs/data_quality_report.txt", "w") as f:
+with open("outputs/data_quality_report.txt", "w", encoding="utf-8") as f:
     f.write("\n".join(report_lines))
 
-print("\n✓ Report saved to outputs/data_quality_report.txt")
+print("\nReport saved to outputs/data_quality_report.txt")

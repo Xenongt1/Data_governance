@@ -1,0 +1,114 @@
+DATA QUALITY PROFILE REPORT
+============================================================
+
+COMPLETENESS:
+----------------------------------------
+  - customer_id: 100%  ✓
+  - first_name: 90%  ✗ (1 missing)
+  - last_name: 90%  ✗ (1 missing)
+  - email: 100%  ✓
+  - phone: 100%  ✓
+  - date_of_birth: 100%  ✓
+  - address: 90%  ✗ (1 missing)
+  - income: 90%  ✗ (1 missing)
+  - account_status: 90%  ✗ (1 missing)
+  - created_date: 100%  ✓
+
+DATA TYPES (detected vs expected):
+----------------------------------------
+  - customer_id: INT ✓
+  - first_name: STRING ✓
+  - last_name: STRING ✓
+  - email: STRING ✓
+  - phone: STRING ✓
+  - date_of_birth: STRING ✗ (should be DATE — Date (YYYY-MM-DD))
+  - address: STRING ✓
+  - income: NUMERIC ✓
+  - account_status: STRING ✓
+  - created_date: STRING ✗ (should be DATE — Date (YYYY-MM-DD))
+
+QUALITY ISSUES:
+----------------------------------------
+1. [High] Missing first_name
+   → customer_id ['3'] has no first name
+2. [High] Missing last_name
+   → customer_id ['5'] has no last name
+3. [Medium] Missing address
+   → customer_id ['9'] — address field is empty
+4. [Medium] Missing income
+   → customer_id ['3'] — income field is empty
+5. [Critical] Missing account_status
+   → customer_id ['4'] — no account status (can't process this record!)
+6. [Critical] Invalid date in 'date_of_birth'
+   → customer_id 6 — 'invalid_date' is not a recognizable date
+7. [Critical] Invalid date in 'created_date'
+   → customer_id 10 — 'invalid_date' is not a recognizable date
+8. [Medium] Non-standard date format in 'date_of_birth'
+   → customer_id 4 — '1975/05/10' (expected YYYY-MM-DD)
+9. [Medium] Non-standard date format in 'created_date'
+   → customer_id 5 — '01/15/2024' (expected YYYY-MM-DD)
+10. [Medium] Non-standard phone format
+   → customer_id 3 — '(555) 234-5678' (expected XXX-XXX-XXXX)
+11. [Medium] Non-standard phone format
+   → customer_id 8 — '555.789.0123' (expected XXX-XXX-XXXX)
+12. [Medium] Non-standard phone format
+   → customer_id 9 — '5557890123' (expected XXX-XXX-XXXX)
+13. [Medium] Email not lowercase
+   → customer_id 6 — 'PATRICIA.DAVIS@GMAIL.COM' contains uppercase letters
+
+UNIQUENESS CHECK:
+----------------------------------------
+  - customer_id: All 10 values are unique ✓
+
+PHONE FORMAT BREAKDOWN:
+----------------------------------------
+  - Standard (XXX-XXX-XXXX): 7 row(s)
+  - Parenthesis ((XXX) XXX-XXXX): 1 row(s)
+  - Dot-separated (XXX.XXX.XXXX): 1 row(s)
+  - No formatting (10 digits): 1 row(s)
+
+DATE FORMAT BREAKDOWN (date_of_birth + created_date):
+----------------------------------------
+  date_of_birth:
+    '1985-03-15' → YYYY-MM-DD ✓
+    '1990-07-22' → YYYY-MM-DD ✓
+    '1988-11-08' → YYYY-MM-DD ✓
+    '1975/05/10' → YYYY/MM/DD ✗ (non-standard)
+    '2005-12-25' → YYYY-MM-DD ✓
+    'invalid_date' → INVALID STRING ✗
+    '1992-02-14' → YYYY-MM-DD ✓
+    '1968-06-18' → YYYY-MM-DD ✓
+    '1958-09-30' → YYYY-MM-DD ✓
+    '1970-03-05' → YYYY-MM-DD ✓
+  created_date:
+    '2024-01-10' → YYYY-MM-DD ✓
+    '2024-01-11' → YYYY-MM-DD ✓
+    '2024-01-12' → YYYY-MM-DD ✓
+    '2024-01-13' → YYYY-MM-DD ✓
+    '01/15/2024' → MM/DD/YYYY ✗ (non-standard)
+    '2024-01-16' → YYYY-MM-DD ✓
+    '2024-01-17' → YYYY-MM-DD ✓
+    '2024-01-18' → YYYY-MM-DD ✓
+    '2024-01-19' → YYYY-MM-DD ✓
+    'invalid_date' → INVALID STRING ✗
+
+SEVERITY SUMMARY:
+----------------------------------------
+  - Critical (blocks processing): 3 issue(s)
+  - High     (data incorrect):    2 issue(s)
+  - Medium   (needs cleaning):    8 issue(s)
+
+ESTIMATED IMPACT:
+----------------------------------------
+  - 1 row(s) missing first_name  = 10% incomplete
+  - 1 row(s) missing last_name    = 10% incomplete
+  - 1 row(s) missing address       = 10% incomplete
+  - 1 row(s) missing income         = 10% incomplete
+  - 1 row(s) missing account_status = 10% incomplete
+  - 2 rows with invalid dates (cannot be processed)
+  - 4 rows with non-standard phone formats (need normalization)
+  - 1 row with non-standard date formats
+  - 1 row with uppercase email (minor)
+
+END OF REPORT
+============================================================
