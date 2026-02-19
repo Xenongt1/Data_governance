@@ -1,0 +1,85 @@
+MASKED SAMPLE REPORT
+============================================================
+
+BEFORE MASKING (first 3 rows):
+------------------------------------------------------------
+  customer_id            | first_name             | last_name              | email                  | phone                  | date_of_birth          | address                | income                 | account_status         | created_date          
+  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  1                      | John                   | Doe                    | john.doe@gmail.com     | 555-123-4567           | 1985-03-15             | 123 Main St New York NY 10001 | 75000                  | active                 | 2024-01-10            
+  2                      | Jane                   | Smith                  | jane.smith@company.com | 555-987-6543           | 1990-07-22             | 456 Oak Ave Los Angeles CA 90001 | 95000                  | active                 | 2024-01-11            
+  3                      | [UNKNOWN]              | Johnson                | bob.johnson@email.com  | 555-234-5678           | 1988-11-08             | 456 Oak Ave Los Angeles CA 90001 | 0                      | suspended              | 2024-01-12            
+
+AFTER MASKING (first 3 rows):
+------------------------------------------------------------
+  customer_id            | first_name             | last_name              | email                  | phone                  | date_of_birth          | address                | income                 | account_status         | created_date          
+  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  1                      | J***                   | D***                   | j***@gmail.com         | ***-***-4567           | 1985-**-**             | [MASKED ADDRESS]       | 75000                  | active                 | 2024-01-10            
+  2                      | J***                   | S***                   | j***@company.com       | ***-***-6543           | 1990-**-**             | [MASKED ADDRESS]       | 95000                  | active                 | 2024-01-11            
+  3                      | [UNKNOWN]              | J***                   | b***@email.com         | ***-***-5678           | 1988-**-**             | [MASKED ADDRESS]       | 0                      | suspended              | 2024-01-12            
+
+MASKING RULES APPLIED (with examples):
+------------------------------------------------------------
+  first_name           'John' -> 'J***'
+                       Reason: First letter only
+
+  last_name            'Doe' -> 'D***'
+                       Reason: First letter only
+
+  email                'john.doe@gmail.com' -> 'j***@gmail.com'
+                       Reason: Local part hidden, domain kept
+
+  phone                '555-123-4567' -> '***-***-4567'
+                       Reason: Last 4 digits kept
+
+  address              '123 Main St NY' -> '[MASKED ADDRESS]'
+                       Reason: Fully replaced
+
+  date_of_birth        '1985-03-15' -> '1985-**-**'
+                       Reason: Year kept, month/day hidden
+
+  income               '75000' -> '75000'
+                       Reason: NOT masked (business data)
+
+  account_status       'active' -> 'active'
+                       Reason: NOT masked (business data)
+
+  customer_id          '1' -> '1'
+                       Reason: NOT masked (internal key)
+
+FULL MASKED DATASET (all 10 rows, key columns):
+------------------------------------------------------------
+  customer_id          | first_name           | last_name            | email                | phone                | date_of_birth        | income               | account_status      
+  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  1                    | J***                 | D***                 | j***@gmail.com       | ***-***-4567         | 1985-**-**           | 75000                | active              
+  2                    | J***                 | S***                 | j***@company.com     | ***-***-6543         | 1990-**-**           | 95000                | active              
+  3                    | [UNKNOWN]            | J***                 | b***@email.com       | ***-***-5678         | 1988-**-**           | 0                    | suspended           
+  4                    | M***                 | B***                 | m***@gmail.com       | ***-***-6789         | 1975-**-**           | 120000               | unknown             
+  5                    | R***                 | [UNKNOWN]            | r***@yahoo.com       | ***-***-7890         | 2005-**-**           | 55000                | active              
+  6                    | P***                 | D***                 | p***@gmail.com       | ***-***-8901         | [INVALID_DATE]       | 82000                | active              
+  7                    | M***                 | M***                 | m***@work.com        | ***-***-9012         | 1992-**-**           | 98000                | active              
+  8                    | S***                 | W***                 | s***@gmail.com       | ***-***-0123         | 1968-**-**           | 105000               | inactive            
+  9                    | D***                 | M***                 | d***@hotmail.com     | ***-***-0123         | 1958-**-**           | 110000               | active              
+  10                   | J***                 | T***                 | j***@company.net     | ***-***-1234         | 1970-**-**           | 88000                | active              
+
+ANALYSIS:
+------------------------------------------------------------
+  - Data structure preserved: 10 rows, 10 columns
+  - PII masked: first_name, last_name, email, phone, address, date_of_birth
+  - Business data intact: customer_id, income, account_status, created_date
+
+  What analytics teams CAN still do with masked data:
+    - Analyse income distributions across account statuses
+    - Count active vs inactive vs suspended customers
+    - Track account creation trends over time
+    - Segment customers by year of birth (year preserved in DOB)
+
+  What analytics teams CANNOT do (by design):
+    - Contact customers directly (emails/phones masked)
+    - Identify specific individuals (names masked)
+    - Locate customers physically (addresses masked)
+
+  Compliance: This masked dataset is safe to share under GDPR/CCPA
+  because no individual can be re-identified from the masked fields.
+
+END OF REPORT
+============================================================
