@@ -1,0 +1,84 @@
+PII DETECTION REPORT
+============================================================
+
+RISK ASSESSMENT:
+----------------------------------------
+  HIGH RISK columns (direct or sensitive PII):
+    - first_name: [Direct Identifier] Identifies the individual by name
+    - last_name: [Direct Identifier] Identifies the individual by name
+    - email: [Contact Information] Uniquely links to a person, enables phishing
+    - phone: [Contact Information] Direct contact vector, enables social engineering
+    - date_of_birth: [Sensitive Personal] Used for identity verification + fraud
+    - address: [Sensitive Personal] Physical location, enables stalking or mail fraud
+
+  MEDIUM RISK columns (financial sensitivity):
+    - income: [Financial Sensitivity] Reveals wealth, enables targeted fraud
+
+  LOW RISK columns (no standalone PII):
+    - customer_id: [Internal Identifier] Alone it's harmless, but links all other PII together
+
+DETECTED PII (by column):
+----------------------------------------
+  - first_name: 9/10 rows (90%) contain PII
+  - last_name: 9/10 rows (90%) contain PII
+  - email: 10/10 rows (100%) contain PII
+  - phone: 10/10 rows (100%) contain PII
+  - address: 9/10 rows (90%) contain PII
+  - date_of_birth: 9/10 rows (90%) contain PII
+
+SAMPLE DETECTED VALUES (first 3 per column):
+----------------------------------------
+  first_name: ['John', 'Jane', 'Mary']
+  last_name: ['Doe', 'Smith', 'Johnson']
+  email: ['john.doe@gmail.com', 'jane.smith@company.com', 'bob.johnson@email.com']
+  phone: ['555-123-4567', '555-987-6543', '(555) 234-5678']
+  address: ['123 Main St New York NY 10001', '456 Oak Ave Los Angeles CA 90001', '456 Oak Ave Los Angeles CA 90001']
+  date_of_birth: ['1985-03-15', '1990-07-22', '1988-11-08']
+
+REGEX PATTERNS USED FOR DETECTION:
+----------------------------------------
+  email: ^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$   -> something@domain.com
+  phone: ^(\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4})$             -> (555) 123-4567 or 555.123.4567
+  date: ^\d{4}[-/]\d{2}[-/]\d{2}$|^\d{2}/\d{2}/\d{4}$        -> YYYY-MM-DD or MM/DD/YYYY
+  address: ^\d+\s+\w+.*                                            -> starts with house number
+  name: ^[A-Za-z]{2,50}$                                        -> letters only, 2-50 chars
+
+EXPOSURE RISK ANALYSIS:
+----------------------------------------
+  - Fully exposed rows (all 5 PII fields present): 6/10
+  - Partially exposed rows (some PII present):     4/10
+
+  If this dataset were breached, attackers could:
+    FAIL PHISH customers          -> they have full email addresses
+    FAIL SPOOF identities         -> they have names + DOB + address combined
+    FAIL SOCIAL ENGINEER          -> they have phone numbers to call/text victims
+    FAIL COMMIT financial fraud   -> income data reveals high-value targets
+    FAIL PHYSICAL threats         -> home addresses are exposed
+    FAIL BYPASS security Qs       -> DOB is commonly used in identity verification
+
+PER-ROW EXPOSURE BREAKDOWN:
+----------------------------------------
+  customer_id       PII Fields   Risk Level
+  --------------- ------------ ------------
+  1                          5     CRITICAL
+  2                          5     CRITICAL
+  3                          4         HIGH
+  4                          5     CRITICAL
+  5                          4         HIGH
+  6                          4         HIGH
+  7                          5     CRITICAL
+  8                          5     CRITICAL
+  9                          4         HIGH
+  10                         5     CRITICAL
+
+MITIGATION RECOMMENDATIONS:
+----------------------------------------
+  1. MASK all PII before sharing with analytics teams (Part 5)
+  2. ENCRYPT the dataset at rest (AES-256)
+  3. RESTRICT access - only authorized roles should see raw PII
+  4. AUDIT LOGS - track who accesses this data and when
+  5. DATA MINIMIZATION - only collect PII fields you actually need
+  6. GDPR/CCPA compliance requires customers to consent to data storage
+
+END OF REPORT
+============================================================
