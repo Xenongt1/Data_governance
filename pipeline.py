@@ -30,12 +30,9 @@ from pathlib import Path
 OUTPUT_DIR = Path("outputs")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s  %(levelname)-8s  %(message)s",
-    datefmt="%H:%M:%S",
-)
-log = logging.getLogger("pipeline")
+from logger import setup_logger
+log = setup_logger("pipeline")
+from data_validator import run_validation
 
 # Track execution for the final report
 pipeline_log = []
@@ -43,16 +40,13 @@ start_time = datetime.now()
 
 def stage(name):
     """Print a bold stage header and log it."""
-    msg = f"\n{'='*60}\nSTAGE: {name}\n{'='*60}"
-    # print(msg) # Suppressed as per user request to avoid console clutter
-    log.info(f"Starting stage: {name}")
+    log.info(f"--- STAGE: {name} ---")
     pipeline_log.append({"stage": name, "events": []})
 
 def event(msg, ok=True):
     """Log an event inside the current stage."""
     icon = "[OK]" if ok else "[FAIL]"
-    # print(f"  {icon} {msg}") # Suppressed as per user request
-    log.info(msg)
+    log.info(f"{icon} {msg}")
     pipeline_log[-1]["events"].append({"msg": msg, "ok": ok})
 
 def safe(val):
@@ -176,70 +170,30 @@ def vname(v):
     v = safe(v)
     return not v or v == "[UNKNOWN]" or bool(re.match(r"^[A-Za-z\-']{2,50}$", v))
 
-def vemail(v):
-    return bool(re.match(r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$", safe(v)))
+# ── Save temporary cleaned file for GX validation ─────────────────────────────
+temp_cleaned_path = "outputs/temp_cleaned.csv"
+cleaned.to_csv(temp_cleaned_path, index=False)
 
-def vphone(v):
-    return bool(re.match(r"^\d{3}-\d{3}-\d{4}$", safe(v)))
+# ── Run Great Expectations Validation ─────────────────────────────────────────
+gx_success = run_validation(data_path=temp_cleaned_path, output_report="outputs/validation_results.txt")
 
-def vdate(v):
-    v = safe(v)
-    return v in ("", "[INVALID_DATE]") or bool(re.match(r"^\d{4}-\d{2}-\d{2}$", v))
-
-def vstatus(v):
-    return safe(v).lower() in {"active", "inactive", "suspended", "unknown"}
-
-def vincome(v):
-    try:
-        return float(safe(v)) >= 0
-    except:
-        return False
-
-validation_failures = {}  # col -> list of row numbers
-passes = 0
-
-for idx, row in cleaned.iterrows():
-    row_checks = {
-        "first_name":    vname(row["first_name"]),
-        "last_name":     vname(row["last_name"]),
-        "email":         vemail(row["email"]),
-        "phone":         vphone(row["phone"]),
-        "date_of_birth": vdate(row["date_of_birth"]),
-        "created_date":  vdate(row["created_date"]),
-        "account_status":vstatus(row["account_status"]),
-        "income":        vincome(row["income"]),
-    }
-    if all(row_checks.values()):
-        passes += 1
-    else:
-        for col, ok in row_checks.items():
-            if not ok:
-                validation_failures.setdefault(col, []).append(idx + 1)
-
-fails = TOTAL_ROWS - passes
-total_col_failures = sum(len(v) for v in validation_failures.values())
-
-if fails == 0:
-    event(f"All {TOTAL_ROWS} rows passed validation")
+if gx_success:
+    event("All rows passed Great Expectations validation")
 else:
-    event(f"{passes}/{TOTAL_ROWS} rows passed, {fails} failed", ok=False)
-    for col, rows in validation_failures.items():
-        event(f"  {col}: {len(rows)} failure(s) at row(s) {rows}", ok=False)
-
-# Column-level summary
-for col in ["first_name", "last_name", "email", "phone", "date_of_birth", "created_date", "account_status", "income"]:
-    col_fails = len(validation_failures.get(col, []))
-    ok = col_fails == 0
-    event(f"{col}: {TOTAL_ROWS - col_fails}/{TOTAL_ROWS} valid", ok=ok)
-
+    event("Validation failures detected via Great Expectations", ok=False)
+    # Note: detailed failures are in outputs/validation_results.txt
+    
 # ── Hard stop if critical failures remain ─────────────────────────────────────
-CRITICAL_COLS = {"email", "phone", "account_status"}
-critical_failures = {c: v for c, v in validation_failures.items() if c in CRITICAL_COLS}
-if critical_failures:
-    event("CRITICAL validation failures detected - pipeline continuing with warnings", ok=False)
-    log.warning(f"Critical failures: {critical_failures}")
+# GX success being False is enough to stop the pipeline if we consider any failure critical
+# or we could parse the GX results for specific columns if needed.
+# For simplicity, we'll stop on any GX failure in this stage.
+if not gx_success:
+    event("CRITICAL validation failures detected - pipeline aborting", ok=False)
+    log.error("Pipeline aborted: Great Expectations validation failed.")
+    raise SystemExit("Pipeline aborted: critical data quality issues remain.")
 else:
     event("No critical validation failures - pipeline continuing")
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # STAGE 4: DETECT PII
@@ -361,8 +315,7 @@ rpt(f"    - {email_fixed} email(s) lowercased")
 rpt(f"    - {missing_fixed} missing value(s) filled")
 rpt()
 rpt("  Validation:")
-rpt(f"    - {passes}/{TOTAL_ROWS} rows passed all checks")
-rpt(f"    - {total_col_failures} individual column failures resolved")
+rpt(f"    - Status: {'PASS' if gx_success else 'FAIL'} (Great Expectations)")
 rpt()
 rpt("  PII Detection:")
 for field, count in pii_counts.items():
@@ -390,9 +343,6 @@ with open(OUTPUT_DIR / "pipeline_execution_report.txt", "w", encoding="utf-8") a
 
 event("Saved pipeline_execution_report.txt")
 
-# Final success message to console
-print(f"\n{'='*60}")
-print("  PIPELINE COMPLETE")
-print(f"  Duration: {duration:.2f}s")
-print(f"  All outputs saved to: {OUTPUT_DIR}")
-print(f"{'='*60}\n")
+# Final success message to log
+log.info(f"PIPELINE COMPLETE - Duration: {duration:.2f}s")
+log.info(f"All outputs saved to: {OUTPUT_DIR}")

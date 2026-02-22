@@ -1,7 +1,7 @@
 PIPELINE EXECUTION REPORT
 ============================================================
-Timestamp: 2026-02-19 15:52:13
-Duration:  0.03 seconds
+Timestamp: 2026-02-22 14:56:24
+Duration:  0.10 seconds
 
 Stage 1: LOAD:
   [OK] Loaded customers_raw.csv - 10 rows, 10 columns
@@ -14,15 +14,7 @@ Stage 2: CLEAN:
   [OK] Missing values filled:      5 field(s)
 
 Stage 3: VALIDATE:
-  [OK] All 10 rows passed validation
-  [OK] first_name: 10/10 valid
-  [OK] last_name: 10/10 valid
-  [OK] email: 10/10 valid
-  [OK] phone: 10/10 valid
-  [OK] date_of_birth: 10/10 valid
-  [OK] created_date: 10/10 valid
-  [OK] account_status: 10/10 valid
-  [OK] income: 10/10 valid
+  [OK] All rows passed Great Expectations validation
   [OK] No critical validation failures - pipeline continuing
 
 Stage 4: DETECT PII:
@@ -59,8 +51,7 @@ SUMMARY:
     - 5 missing value(s) filled
 
   Validation:
-    - 10/10 rows passed all checks
-    - 0 individual column failures resolved
+    - Status: PASS (Great Expectations)
 
   PII Detection:
     - 10 emails detected and flagged

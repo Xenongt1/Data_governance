@@ -12,7 +12,8 @@ Fixes all quality issues found in Parts 1-3:
 import pandas as pd
 import re
 import os
-from datetime import datetime
+from logger import setup_logger
+log = setup_logger("cleaning")
 
 # ── Load raw data ──────────────────────────────────────────────────────────────
 df = pd.read_csv("customers_raw.csv", dtype=str)
@@ -27,7 +28,6 @@ actions = []  # track every change made
 
 def add(text=""):
     report_lines.append(text)
-    # print(text) # Suppressed as per user request
 
 def log_action(category, detail):
     actions.append({"category": category, "detail": detail})
@@ -313,5 +313,5 @@ cleaned.to_csv("outputs/customers_cleaned.csv", index=False)
 # Local copy for convenience
 cleaned.to_csv("customers_cleaned.csv", index=False)
 
-print("\nSaved: outputs/cleaning_log.txt")
-print("Saved: outputs/customers_cleaned.csv")
+log.info(f"Saved: outputs/cleaning_log.txt")
+log.info(f"Saved: outputs/customers_cleaned.csv")

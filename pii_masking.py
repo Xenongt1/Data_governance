@@ -10,7 +10,8 @@ Masking rules:
 """
 
 import pandas as pd
-import os
+from logger import setup_logger
+log = setup_logger("masking")
 
 # ── Load cleaned data ─────────────────────────────────────────────────────────
 if os.path.exists("outputs/customers_cleaned.csv"):
@@ -30,7 +31,6 @@ TOTAL_ROWS = len(df)
 report_lines = []
 def add(text=""):
     report_lines.append(text)
-    # print(text) # Suppressed as per user request
 
 def safe(val):
     return "" if pd.isna(val) else str(val).strip()
@@ -189,5 +189,5 @@ masked.to_csv("outputs/customers_masked.csv", index=False)
 # Local copy for convenience
 masked.to_csv("customers_masked.csv", index=False)
 
-print("\nSaved: outputs/masked_sample.txt")
-print("Saved: outputs/customers_masked.csv")
+log.info(f"Saved: outputs/masked_sample.txt")
+log.info(f"Saved: outputs/customers_masked.csv")

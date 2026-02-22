@@ -7,11 +7,13 @@ A robust, end-to-end data engineering pipeline designed to ingest, clean, valida
 This pipeline transforms messy, high-risk raw data into an analytics-ready, protected dataset. It addresses common data quality issues such as inconsistent formatting and missing values while implementing sophisticated PII (Personally Identifiable Information) detection and masking strategies.
 
 ### Key Features
+
 - **Exploratory Data Quality Analysis:** Comprehensive profiling of raw datasets.
 - **Automated PII Detection:** Regex-based scanning for sensitive data (Emails, Phones, SSNs, Addresses).
-- **Strict Data Validation:** Rule-based validation to ensure schema and business logic integrity.
+- **Great Expectations Integration:** Industry-standard validation using declarative expectation suites.
 - **Intelligent Data Cleaning:** Multi-format normalization and missing value imputation.
-- **Privacy-Preserving Masking:** Partial masking of PII to maintain analytical utility while ensuring compliance.
+- **Privacy-Preserving Masking:** Partial masking of PII to maintain analytical utility.
+- **Centralized File Logging:** Zero console output; all events captured in `outputs/pipeline.log`.
 - **Orchestrated Execution:** Single-command execution of the entire data lifecycle.
 
 ---
@@ -23,15 +25,18 @@ Data_governance/
 ├── customers_raw.csv           # Input: Messy raw data
 ├── eda_quality.py              # Part 1: Exploratory Analysis logic
 ├── pii_detection.py            # Part 2: PII Scanner
-├── data_validator.py           # Part 3: Validation engine
+├── data_validator.py           # Part 3: Validation engine (powered by Great Expectations)
 ├── data_cleaning.py            # Part 4: Normalization & Cleaning
 ├── pii_masking.py              # Part 5: Data Protection/Masking
 ├── pipeline.py                 # Part 6: Master Orchestrator
+├── logger.py                   # Centralized logging utility
 ├── REFLECTION.md               # Part 7: Governance insights & lessons
+├── .gitignore                  # Git exclusion rules
 ├── outputs/                    # Generated reports and data files
+│   ├── pipeline.log            # NEW: Full audit trail of the pipeline run
 │   ├── data_quality_report.txt
 │   ├── pii_detection_report.txt
-│   ├── validation_results.txt
+│   ├── validation_results.txt  # GX Validation results
 │   ├── cleaning_log.txt
 │   ├── masked_sample.txt
 │   ├── pipeline_execution_report.txt
@@ -58,18 +63,23 @@ The `pipeline.py` script orchestrates the following stages:
 ## Getting Started
 
 ### Prerequisites
+
 - Python 3.8+
 - Pandas
+- Great Expectations
 
 ### Installation
+
 ```bash
 git clone https://github.com/Xenongt1/Data_governance.git
 cd Data_governance
-pip install pandas
+pip install pandas great-expectations
 ```
 
 ### Running the Pipeline
-To run the entire data governance process and generate all reports:
+
+To run the entire data governance process. **Note: Minimal console output is produced; check `outputs/pipeline.log` for details.**
+
 ```bash
 python pipeline.py
 ```
@@ -79,9 +89,11 @@ python pipeline.py
 ## Data Quality & Governance Insights
 
 As detailed in `REFLECTION.md`, this project highlights critical real-world challenges:
+
 - **Sentinel Strings:** Handling text like `invalid_date` in numeric/date columns.
 - **Exposure Risk:** How the combination of name + DOB + address creates a "ready-made fraud toolkit."
 - **Data Minimization:** Balancing the need for analytical utility with the necessity of privacy.
 
 ## License
+
 This project is part of a data engineering mini-project.

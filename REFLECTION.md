@@ -36,7 +36,7 @@ The dataset contained six categories of high-risk personally identifiable inform
 - **Dates of birth** - used as verification questions by banks, healthcare providers, and government systems
 - **Income** - financial sensitivity; reveals high-value targets for fraud
 
-The most serious threat is not any single field in isolation - it is their *combination*. A dataset with name + email + phone + address + DOB is a complete identity dossier. An attacker with this data can:
+The most serious threat is not any single field in isolation - it is their _combination_. A dataset with name + email + phone + address + DOB is a complete identity dossier. An attacker with this data can:
 
 - Open lines of credit in a victim's name (identity theft)
 - Answer security questions at any institution that uses DOB or address for verification
@@ -52,21 +52,23 @@ In our dataset, 6 out of 10 rows had all five high-risk fields present simultane
 Masking PII is not free. Every field we hide reduces what the data can be used for.
 
 **What we gave up by masking:**
+
 - We can no longer contact customers directly from the masked dataset (emails and phones are hidden)
 - We cannot verify identity using the masked data
 - We cannot de-duplicate customers by name if the same person appears twice under slightly different spellings
 
 **What we preserved:**
+
 - Income distributions are fully intact for financial analysis
 - Account status breakdown (active / inactive / suspended) is available for operational reporting
 - Year of birth is preserved in the masked DOB (`1985-**-**`), so age-bracket analysis is still possible
 - Account creation dates are untouched, so trend analysis over time works fine
 
 **When masking is worth the trade-off:**
-Masking makes sense whenever the *consumer* of the data does not need to identify specific individuals. An analytics team asking "what is the average income of suspended accounts?" needs none of the PII fields at all. A machine learning team building a churn model only needs behavioural and financial signals, not names or addresses.
+Masking makes sense whenever the _consumer_ of the data does not need to identify specific individuals. An analytics team asking "what is the average income of suspended accounts?" needs none of the PII fields at all. A machine learning team building a churn model only needs behavioural and financial signals, not names or addresses.
 
 **When you would NOT mask:**
-The team responsible for customer communications (sending emails, SMS notifications) obviously needs real contact details. The fraud investigation team needs real addresses to file reports. The answer is not to give everyone the unmasked data - it is to give each team only the fields they actually need, a principle called *data minimisation*.
+The team responsible for customer communications (sending emails, SMS notifications) obviously needs real contact details. The fraud investigation team needs real addresses to file reports. The answer is not to give everyone the unmasked data - it is to give each team only the fields they actually need, a principle called _data minimisation_.
 
 ---
 
@@ -81,15 +83,24 @@ The validators we built caught the following correctly:
 - Email case issues
 - Invalid account status values
 
+**Modernizing the Validation Layer:**
+The initial custom validators were built to address the specific messiness seen in `customers_raw.csv`. However, to move toward production readiness, we integrated **Great Expectations (GX)**. This shifted the logic from manual regex checks to a schema-driven expectation suite (`ExpectationSuite`).
+
+GX provides:
+
+- **Reproducibility:** Rules are defined as declarative "Expectations".
+- **Visual Auditing:** Automated generation of `validation_results.txt` showing exactly which rows failed which rules.
+- **Fail-Fast Mechanics:** The pipeline now uses GX results to trigger an immediate halt if critical data integrity is compromised.
+
 **What the validators missed or could not fix:**
 
-The validators cannot catch *semantically wrong but syntactically valid* data. For example, Row 5's customer has a date of birth of `2005-12-25`, making them about 20 years old - technically valid, but suspicious for a financial services customer. We flagged this with an age check (under 18), but a 20-year-old with an income of $55,000 could still be legitimate or could be a data entry error. Only a human reviewer can make that call.
+The validators cannot catch _semantically wrong but syntactically valid_ data. For example, Row 5's customer has a date of birth of `2005-12-25`, making them about 20 years old - technically valid, but suspicious for a financial services customer. We flagged this with an age check (under 18), but a 20-year-old with an income of $55,000 could still be legitimate or could be a data entry error. Only a human reviewer can make that call.
 
 Similarly, the validator has no way to know that `[INVALID_DATE]` rows represent genuinely broken data that needs to be sourced again from the original system - it just flags and moves on.
 
 **How to improve the validators:**
 
-Cross-field validation would catch more issues. For instance: if `account_status` is `active` but `income` is `0`, that combination warrants a review flag. If `created_date` is before `date_of_birth`, that is impossible and should be a hard failure. These kinds of rules require understanding the *business logic*, not just the data types.
+Cross-field validation would catch more issues. For instance: if `account_status` is `active` but `income` is `0`, that combination warrants a review flag. If `created_date` is before `date_of_birth`, that is impossible and should be a hard failure. These kinds of rules require understanding the _business logic_, not just the data types.
 
 ---
 
@@ -99,9 +110,9 @@ In a real production environment, this pipeline would not be run manually. It wo
 
 **Scheduling:** For a fintech company ingesting customer data from multiple sources, this pipeline would likely run daily - triggered whenever a new batch of raw data lands in cloud storage (e.g., an S3 bucket). It could also run on-demand when a data migration happens.
 
-**What happens if validation fails:** The pipeline should distinguish between *warnings* and *hard failures*. A few rows with non-standard phone formats are a warning - clean what you can and flag the rest. Missing `account_status` on 50% of rows is a hard failure - stop the pipeline, do not write any output, and alert the data engineering team immediately. Writing bad data to a production database is always worse than writing no data.
+**What happens if validation fails:** The pipeline should distinguish between _warnings_ and _hard failures_. A few rows with non-standard phone formats are a warning - clean what you can and flag the rest. Missing `account_status` on 50% of rows is a hard failure - stop the pipeline, do not write any output, and alert the data engineering team immediately. Writing bad data to a production database is always worse than writing no data.
 
-**Notification:** Alerts should go to a Slack channel or PagerDuty when the pipeline fails. The execution report generated in Stage 6 provides the information needed to diagnose what went wrong. In a mature system, a data quality dashboard would track metrics like "% rows passing validation" over time, making it easy to spot when a new data source suddenly degrades quality.
+**Notification & Logging:** Alerts should go to a Slack channel or PagerDuty when the pipeline fails. To support this, we implemented a **Centralized Logging System**. In production, console output is hidden (to avoid cluttering cluster logs) and all events are directed to `outputs/pipeline.log`. This ensures a permanent, searchable audit trail of every pipeline run.
 
 **Handling failures:** Every output of this pipeline should be versioned. If a bad batch slips through and corrupts downstream data, engineers need to be able to roll back to the last known-good dataset. Cloud storage with versioning enabled (S3 versioning, GCS object versioning) handles this automatically.
 
@@ -111,8 +122,8 @@ In a real production environment, this pipeline would not be run manually. It wo
 
 **What was surprising:** How much damage a single badly formatted field can do. The `invalid_date` string in two rows is not just a cosmetic problem - it would crash any date arithmetic, break any time-series analysis, and cause silent errors in downstream joins. Real data is messier than any tutorial dataset suggests, and the messiness is rarely random - it reflects the history of different systems, different teams, and different assumptions all colliding.
 
-**What was harder than expected:** Deciding *what to do* with missing values is genuinely hard. There is no universally correct answer. Filling income with `0` is defensible but could skew averages in a model. Deleting the row preserves data integrity but loses valid information in other columns. Every decision involves a trade-off, and that trade-off should be documented - which is exactly what the cleaning log is for.
+**What was harder than expected:** Deciding _what to do_ with missing values is genuinely hard. There is no universally correct answer. Filling income with `0` is defensible but could skew averages in a model. Deleting the row preserves data integrity but loses valid information in other columns. Every decision involves a trade-off, and that trade-off should be documented - which is exactly what the cleaning log is for.
 
-**What to do differently next time:** Build the validation rules *before* looking at the data, based purely on business requirements. Looking at the data first risks writing validators that fit the data you have rather than the data you need. In production, validation schemas should be version-controlled alongside the pipeline code, so changes to the rules are tracked and auditable.
+**What to do differently next time:** Build the validation rules _before_ looking at the data, based purely on business requirements. Looking at the data first risks writing validators that fit the data you have rather than the data you need. In production, validation schemas should be version-controlled alongside the pipeline code, so changes to the rules are tracked and auditable.
 
 The broader lesson is that data quality is not a one-time cleaning exercise - it is an ongoing discipline. The pipeline built here is a foundation, not a finish line.

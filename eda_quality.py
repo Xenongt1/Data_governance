@@ -7,18 +7,15 @@ import pandas as pd
 import re
 from datetime import datetime
 
+from logger import setup_logger
+log = setup_logger("eda")
+
 # ── Load Data ──────────────────────────────────────────────────────────────────
 df = pd.read_csv("customers_raw.csv", dtype=str)  # load everything as string so we see raw values
 df.columns = df.columns.str.strip()               # remove accidental spaces in column names
 
 TOTAL_ROWS = len(df)
-print(f"Loaded {TOTAL_ROWS} rows, {len(df.columns)} columns\n")
-
-report_lines = []
-
-def add(text=""):
-    report_lines.append(text)
-    # Combined: Save to file ONLY (removed print as per user request)
+log.info(f"Loaded {TOTAL_ROWS} rows, {len(df.columns)} columns")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SECTION 1: COMPLETENESS

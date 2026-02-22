@@ -8,6 +8,9 @@ import pandas as pd
 import re
 import os
 
+from logger import setup_logger
+log = setup_logger("pii_detection")
+
 # ── Load Data ──────────────────────────────────────────────────────────────────
 df = pd.read_csv("customers_raw.csv", dtype=str)
 df.columns = df.columns.str.strip()
@@ -19,7 +22,6 @@ TOTAL_ROWS = len(df)
 report_lines = []
 def add(text=""):
     report_lines.append(text)
-    # print(text)  # Suppressed as per user request
 
 # ══════════════════════════════════════════════════════════════════════════════
 # REGEX PATTERNS — these are the "detectors"
@@ -234,4 +236,4 @@ os.makedirs("outputs", exist_ok=True)
 with open("outputs/pii_detection_report.txt", "w", encoding="utf-8") as f:
     f.write("\n".join(report_lines))
 
-print("\nReport saved to outputs/pii_detection_report.txt")
+log.info(f"Report saved to outputs/pii_detection_report.txt")
